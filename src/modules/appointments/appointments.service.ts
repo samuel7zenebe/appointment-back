@@ -1,11 +1,15 @@
-import { AppointmentStatus, Prisma, Role } from "@prisma/client";
+import { Role, AppointmentStatus, Prisma } from "../../generated/prisma";
+
 import { prisma } from "../../prisma/client";
 import { ok } from "../../utils/apiResponse";
 import { Errors } from "../../utils/errors";
 import { AppointmentsRepo } from "./appointments.repo";
 import { DoctorsRepo } from "../doctors/doctors.repo";
 
-async function runSerializable<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+async function runSerializable<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+): Promise<T> {
   let attempt = 0;
   while (true) {
     try {
@@ -18,7 +22,10 @@ async function runSerializable<T>(fn: () => Promise<T>, maxRetries = 3): Promise
   }
 }
 
-export async function bookAppointment(patientUserId: string, input: { slotId: string; notes?: string }) {
+export async function bookAppointment(
+  patientUserId: string,
+  input: { slotId: string; notes?: string },
+) {
   const patient = await prisma.user.findFirst({
     where: { id: patientUserId, deletedAt: null, isActive: true },
     select: { email: true, firstName: true, lastName: true },
@@ -32,24 +39,43 @@ export async function bookAppointment(patientUserId: string, input: { slotId: st
           where: {
             id: input.slotId,
             deletedAt: null,
-            doctor: { deletedAt: null, user: { deletedAt: null, isActive: true } },
+            doctor: {
+              deletedAt: null,
+              user: { deletedAt: null, isActive: true },
+            },
           },
-          select: { id: true, doctorId: true, startTime: true, endTime: true, isBooked: true },
+          select: {
+            id: true,
+            doctorId: true,
+            startTime: true,
+            endTime: true,
+            isBooked: true,
+          },
         });
         if (!slot) throw Errors.notFound("Availability slot not found");
         if (slot.isBooked) throw Errors.conflict("Slot already booked");
-        if (slot.startTime.getTime() < Date.now()) throw Errors.badRequest("Cannot book past slot");
+        if (slot.startTime.getTime() < Date.now())
+          throw Errors.badRequest("Cannot book past slot");
 
         const existingOverlap = await tx.appointment.findFirst({
           where: {
             patientId: patientUserId,
             deletedAt: null,
-            status: { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED] },
-            slot: { deletedAt: null, startTime: { lt: slot.endTime }, endTime: { gt: slot.startTime } },
+            status: {
+              in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED],
+            },
+            slot: {
+              deletedAt: null,
+              startTime: { lt: slot.endTime },
+              endTime: { gt: slot.startTime },
+            },
           },
           select: { id: true },
         });
-        if (existingOverlap) throw Errors.conflict("Patient already has an overlapping appointment");
+        if (existingOverlap)
+          throw Errors.conflict(
+            "Patient already has an overlapping appointment",
+          );
 
         const updated = await AppointmentsRepo.markSlotBooked(tx, slot.id);
         if (updated.count !== 1) throw Errors.conflict("Slot already booked");
@@ -75,21 +101,43 @@ export async function bookAppointment(patientUserId: string, input: { slotId: st
   return ok("Appointment booked", created.appointment);
 }
 
-export async function myAppointments(patientUserId: string, params: { page: number; limit: number; status?: AppointmentStatus }) {
+export async function myAppointments(
+  patientUserId: string,
+  params: { page: number; limit: number; status?: AppointmentStatus },
+) {
   const skip = (params.page - 1) * params.limit;
   const [items, total] = await Promise.all([
-    AppointmentsRepo.listMyAppointments(patientUserId, { skip, take: params.limit, status: params.status }),
+    AppointmentsRepo.listMyAppointments(patientUserId, {
+      skip,
+      take: params.limit,
+      status: params.status,
+    }),
     AppointmentsRepo.countMyAppointments(patientUserId, params.status),
   ]);
-  return ok("My appointments", { items, page: params.page, limit: params.limit, total });
+  return ok("My appointments", {
+    items,
+    page: params.page,
+    limit: params.limit,
+    total,
+  });
 }
 
-export async function cancelAppointment(patientUserId: string, appointmentId: string, cancellationReason: string) {
-  const appt = await AppointmentsRepo.findAppointmentForPatient(appointmentId, patientUserId);
+export async function cancelAppointment(
+  patientUserId: string,
+  appointmentId: string,
+  cancellationReason: string,
+) {
+  const appt = await AppointmentsRepo.findAppointmentForPatient(
+    appointmentId,
+    patientUserId,
+  );
   if (!appt) throw Errors.notFound("Appointment not found");
-  if (appt.status === AppointmentStatus.COMPLETED) throw Errors.conflict("Completed appointments cannot be cancelled");
-  if (appt.status === AppointmentStatus.CANCELLED) return ok("Already cancelled", { id: appt.id, status: appt.status });
-  if (appt.status === AppointmentStatus.REJECTED) throw Errors.conflict("Rejected appointments cannot be cancelled");
+  if (appt.status === AppointmentStatus.COMPLETED)
+    throw Errors.conflict("Completed appointments cannot be cancelled");
+  if (appt.status === AppointmentStatus.CANCELLED)
+    return ok("Already cancelled", { id: appt.id, status: appt.status });
+  if (appt.status === AppointmentStatus.REJECTED)
+    throw Errors.conflict("Rejected appointments cannot be cancelled");
 
   await prisma.$transaction(
     async (tx) => {
@@ -110,7 +158,8 @@ export async function updateAppointmentStatus(params: {
   appointmentId: string;
   status: AppointmentStatus;
 }) {
-  if (params.actor.role !== Role.DOCTOR && params.actor.role !== Role.ADMIN) throw Errors.forbidden();
+  if (params.actor.role !== Role.DOCTOR && params.actor.role !== Role.ADMIN)
+    throw Errors.forbidden();
 
   const next = params.status;
   const allowed: AppointmentStatus[] = [
@@ -123,9 +172,12 @@ export async function updateAppointmentStatus(params: {
   }
 
   const doctorProfile =
-    params.actor.role === Role.DOCTOR ? await DoctorsRepo.findDoctorProfileByUserId(params.actor.userId) : null;
+    params.actor.role === Role.DOCTOR
+      ? await DoctorsRepo.findDoctorProfileByUserId(params.actor.userId)
+      : null;
   const doctorId = doctorProfile?.id;
-  if (params.actor.role === Role.DOCTOR && !doctorId) throw Errors.forbidden("Doctor profile required");
+  if (params.actor.role === Role.DOCTOR && !doctorId)
+    throw Errors.forbidden("Doctor profile required");
 
   const appt = await prisma.appointment.findFirst({
     where: {
@@ -138,22 +190,36 @@ export async function updateAppointmentStatus(params: {
   if (!appt) throw Errors.notFound("Appointment not found");
 
   const current = appt.status;
-  if (current === AppointmentStatus.CANCELLED) throw Errors.conflict("Cancelled appointments cannot be updated");
-  if (current === AppointmentStatus.COMPLETED) throw Errors.conflict("Completed appointments cannot be updated");
+  if (current === AppointmentStatus.CANCELLED)
+    throw Errors.conflict("Cancelled appointments cannot be updated");
+  if (current === AppointmentStatus.COMPLETED)
+    throw Errors.conflict("Completed appointments cannot be updated");
 
-  if (next === AppointmentStatus.CONFIRMED && current !== AppointmentStatus.PENDING) {
+  if (
+    next === AppointmentStatus.CONFIRMED &&
+    current !== AppointmentStatus.PENDING
+  ) {
     throw Errors.conflict("Only pending appointments can be confirmed");
   }
-  if (next === AppointmentStatus.REJECTED && current !== AppointmentStatus.PENDING) {
+  if (
+    next === AppointmentStatus.REJECTED &&
+    current !== AppointmentStatus.PENDING
+  ) {
     throw Errors.conflict("Only pending appointments can be rejected");
   }
-  if (next === AppointmentStatus.COMPLETED && current !== AppointmentStatus.CONFIRMED) {
+  if (
+    next === AppointmentStatus.COMPLETED &&
+    current !== AppointmentStatus.CONFIRMED
+  ) {
     throw Errors.conflict("Only confirmed appointments can be completed");
   }
 
   await prisma.$transaction(
     async (tx) => {
-      await tx.appointment.update({ where: { id: appt.id }, data: { status: next } });
+      await tx.appointment.update({
+        where: { id: appt.id },
+        data: { status: next },
+      });
       if (next === AppointmentStatus.REJECTED) {
         await AppointmentsRepo.freeSlot(tx, appt.slotId);
       }

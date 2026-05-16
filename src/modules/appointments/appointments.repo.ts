@@ -1,20 +1,41 @@
-import { AppointmentStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../prisma/client";
+import { AppointmentStatus } from "../../generated/prisma";
 
 export const AppointmentsRepo = {
   findSlotById: (slotId: string) =>
     prisma.availabilitySlot.findFirst({
-      where: { id: slotId, deletedAt: null, doctor: { deletedAt: null, user: { deletedAt: null, isActive: true } } },
-      select: { id: true, doctorId: true, startTime: true, endTime: true, isBooked: true },
+      where: {
+        id: slotId,
+        deletedAt: null,
+        doctor: { deletedAt: null, user: { deletedAt: null, isActive: true } },
+      },
+      select: {
+        id: true,
+        doctorId: true,
+        startTime: true,
+        endTime: true,
+        isBooked: true,
+      },
     }),
 
-  findOverlappingPatientAppointments: (patientId: string, startTime: Date, endTime: Date) =>
+  findOverlappingPatientAppointments: (
+    patientId: string,
+    startTime: Date,
+    endTime: Date,
+  ) =>
     prisma.appointment.findFirst({
       where: {
         patientId,
         deletedAt: null,
-        status: { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED] },
-        slot: { deletedAt: null, startTime: { lt: endTime }, endTime: { gt: startTime } },
+        status: {
+          in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED],
+        },
+        slot: {
+          deletedAt: null,
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+        },
       },
       select: { id: true },
     }),
@@ -31,7 +52,15 @@ export const AppointmentsRepo = {
       data: { isBooked: false },
     }),
 
-  createAppointment: (tx: Prisma.TransactionClient, data: { patientId: string; doctorId: string; slotId: string; notes?: string }) =>
+  createAppointment: (
+    tx: Prisma.TransactionClient,
+    data: {
+      patientId: string;
+      doctorId: string;
+      slotId: string;
+      notes?: string;
+    },
+  ) =>
     tx.appointment.create({
       data: {
         patientId: data.patientId,
@@ -46,18 +75,37 @@ export const AppointmentsRepo = {
   findAppointmentForPatient: (id: string, patientId: string) =>
     prisma.appointment.findFirst({
       where: { id, patientId, deletedAt: null },
-      select: { id: true, status: true, slotId: true, doctorId: true, appointmentDate: true },
+      select: {
+        id: true,
+        status: true,
+        slotId: true,
+        doctorId: true,
+        appointmentDate: true,
+      },
     }),
 
   findAppointmentForDoctor: (id: string, doctorId: string) =>
     prisma.appointment.findFirst({
       where: { id, doctorId, deletedAt: null },
-      select: { id: true, status: true, slotId: true, patientId: true, appointmentDate: true },
+      select: {
+        id: true,
+        status: true,
+        slotId: true,
+        patientId: true,
+        appointmentDate: true,
+      },
     }),
 
-  listMyAppointments: (patientId: string, params: { skip: number; take: number; status?: AppointmentStatus }) =>
+  listMyAppointments: (
+    patientId: string,
+    params: { skip: number; take: number; status?: AppointmentStatus },
+  ) =>
     prisma.appointment.findMany({
-      where: { patientId, deletedAt: null, ...(params.status ? { status: params.status } : {}) },
+      where: {
+        patientId,
+        deletedAt: null,
+        ...(params.status ? { status: params.status } : {}),
+      },
       orderBy: { appointmentDate: "desc" },
       skip: params.skip,
       take: params.take,
@@ -79,6 +127,7 @@ export const AppointmentsRepo = {
     }),
 
   countMyAppointments: (patientId: string, status?: AppointmentStatus) =>
-    prisma.appointment.count({ where: { patientId, deletedAt: null, ...(status ? { status } : {}) } }),
+    prisma.appointment.count({
+      where: { patientId, deletedAt: null, ...(status ? { status } : {}) },
+    }),
 };
-

@@ -1,9 +1,9 @@
-import { Role } from "@prisma/client";
 import { prisma } from "../../prisma/client";
 import { Errors } from "../../utils/errors";
 import { hashPassword, verifyPassword } from "../../utils/password";
 import { ok } from "../../utils/apiResponse";
 import { signAccessToken } from "../../utils/jwt";
+import { Role } from "../../generated/prisma";
 
 export async function register(input: {
   firstName: string;
@@ -27,11 +27,19 @@ export async function register(input: {
         phoneNumber: input.phoneNumber,
         role,
       },
-      select: { id: true, email: true, role: true, firstName: true, lastName: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        createdAt: true,
+      },
     });
 
     if (role === Role.DOCTOR) {
-      if (!input.specialtyId) throw Errors.badRequest("specialtyId is required for doctors");
+      if (!input.specialtyId)
+        throw Errors.badRequest("specialtyId is required for doctors");
       await tx.doctorProfile.create({
         data: {
           userId: user.id,
@@ -49,7 +57,15 @@ export async function register(input: {
 export async function login(input: { email: string; password: string }) {
   const user = await prisma.user.findFirst({
     where: { email: input.email.toLowerCase(), deletedAt: null },
-    select: { id: true, email: true, password: true, role: true, isActive: true, firstName: true, lastName: true },
+    select: {
+      id: true,
+      email: true,
+      password: true,
+      role: true,
+      isActive: true,
+      firstName: true,
+      lastName: true,
+    },
   });
   if (!user) throw Errors.unauthorized("Invalid credentials");
   if (!user.isActive) throw Errors.unauthorized("Account is suspended");
@@ -60,7 +76,13 @@ export async function login(input: { email: string; password: string }) {
   const accessToken = signAccessToken({ sub: user.id, role: user.role });
 
   return ok("Logged in", {
-    user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName },
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    },
     accessToken,
   });
 }

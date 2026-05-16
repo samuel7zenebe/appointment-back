@@ -1,14 +1,24 @@
-import { Role } from "@prisma/client";
+import { Role } from "../../generated/prisma";
 import { prisma } from "../../prisma/client";
 
 export const AdminRepo = {
-  listUsers: (params: { skip: number; take: number; role?: Role; isActive?: boolean; q?: string }) =>
+  listUsers: (params: {
+    skip: number;
+    take: number;
+    role?: Role;
+    isActive?: boolean;
+    q?: string;
+  }) =>
     prisma.user.findMany({
       where: {
         deletedAt: null,
         ...(params.role ? { role: params.role } : {}),
-        ...(typeof params.isActive === "boolean" ? { isActive: params.isActive } : {}),
-        ...(params.q ? { OR: [{ email: { contains: params.q, mode: "insensitive" } }] } : {}),
+        ...(typeof params.isActive === "boolean"
+          ? { isActive: params.isActive }
+          : {}),
+        ...(params.q
+          ? { OR: [{ email: { contains: params.q, mode: "insensitive" } }] }
+          : {}),
       },
       skip: params.skip,
       take: params.take,
@@ -29,8 +39,12 @@ export const AdminRepo = {
       where: {
         deletedAt: null,
         ...(params.role ? { role: params.role } : {}),
-        ...(typeof params.isActive === "boolean" ? { isActive: params.isActive } : {}),
-        ...(params.q ? { OR: [{ email: { contains: params.q, mode: "insensitive" } }] } : {}),
+        ...(typeof params.isActive === "boolean"
+          ? { isActive: params.isActive }
+          : {}),
+        ...(params.q
+          ? { OR: [{ email: { contains: params.q, mode: "insensitive" } }] }
+          : {}),
       },
     }),
 
@@ -60,4 +74,3 @@ export const AdminRepo = {
     return { users, doctors, apptsByStatus };
   },
 };
-
