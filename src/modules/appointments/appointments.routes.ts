@@ -10,7 +10,7 @@ import {
   myAppointmentsQuerySchema,
   updateStatusBodySchema,
 } from "./appointments.validation";
-import { Role } from "../../generated/prisma";
+import { Role } from "@prisma/client";
 
 export const appointmentsRouter = Router();
 

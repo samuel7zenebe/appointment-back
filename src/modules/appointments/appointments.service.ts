@@ -1,4 +1,4 @@
-import { Role, AppointmentStatus, Prisma } from "../../generated/prisma";
+import { Role, AppointmentStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "../../prisma/client";
 import { ok } from "../../utils/apiResponse";
@@ -34,7 +34,7 @@ export async function bookAppointment(
 
   const created = await runSerializable(async () =>
     prisma.$transaction(
-      async (tx) => {
+      async (tx: any) => {
         const slot = await tx.availabilitySlot.findFirst({
           where: {
             id: input.slotId,
@@ -140,7 +140,7 @@ export async function cancelAppointment(
     throw Errors.conflict("Rejected appointments cannot be cancelled");
 
   await prisma.$transaction(
-    async (tx) => {
+    async (tx: any) => {
       await tx.appointment.update({
         where: { id: appt.id },
         data: { status: AppointmentStatus.CANCELLED, cancellationReason },
@@ -215,7 +215,7 @@ export async function updateAppointmentStatus(params: {
   }
 
   await prisma.$transaction(
-    async (tx) => {
+    async (tx: any) => {
       await tx.appointment.update({
         where: { id: appt.id },
         data: { status: next },

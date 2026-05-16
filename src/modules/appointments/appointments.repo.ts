@@ -1,5 +1,5 @@
 import { prisma } from "../../prisma/client";
-import { AppointmentStatus, Prisma } from "../../generated/prisma";
+import { AppointmentStatus, Prisma } from "@prisma/client";
 
 export const AppointmentsRepo = {
   findSlotById: (slotId: string) =>

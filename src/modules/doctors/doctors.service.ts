@@ -3,14 +3,27 @@ import { Errors } from "../../utils/errors";
 import { DoctorsRepo } from "./doctors.repo";
 import { prisma } from "../../prisma/client";
 
-function overlaps(a: { startTime: Date; endTime: Date }, b: { startTime: Date; endTime: Date }) {
+function overlaps(
+  a: { startTime: Date; endTime: Date },
+  b: { startTime: Date; endTime: Date },
+) {
   return a.startTime < b.endTime && a.endTime > b.startTime;
 }
 
-export async function listDoctors(params: { page: number; limit: number; q?: string; specialtyId?: string }) {
+export async function listDoctors(params: {
+  page: number;
+  limit: number;
+  q?: string;
+  specialtyId?: string;
+}) {
   const skip = (params.page - 1) * params.limit;
   const [items, total] = await Promise.all([
-    DoctorsRepo.listDoctors({ skip, take: params.limit, q: params.q, specialtyId: params.specialtyId }),
+    DoctorsRepo.listDoctors({
+      skip,
+      take: params.limit,
+      q: params.q,
+      specialtyId: params.specialtyId,
+    }),
     DoctorsRepo.countDoctors({ q: params.q, specialtyId: params.specialtyId }),
   ]);
 
@@ -50,29 +63,43 @@ export async function getDoctorAvailability(doctorId: string) {
   return ok("Availability", { items });
 }
 
-export async function createAvailability(userId: string, slots: Array<{ startTime: Date; endTime: Date }>) {
+export async function createAvailability(
+  userId: string,
+  slots: Array<{ startTime: Date; endTime: Date }>,
+) {
   const profile = await DoctorsRepo.findDoctorProfileByUserId(userId);
   if (!profile) throw Errors.notFound("Doctor profile not found");
 
   const normalized = slots
-    .map((s) => ({ startTime: new Date(s.startTime), endTime: new Date(s.endTime) }))
+    .map((s) => ({
+      startTime: new Date(s.startTime),
+      endTime: new Date(s.endTime),
+    }))
     .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 
   for (const s of normalized) {
-    if (!(s.startTime instanceof Date) || isNaN(s.startTime.getTime())) throw Errors.badRequest("Invalid startTime");
-    if (!(s.endTime instanceof Date) || isNaN(s.endTime.getTime())) throw Errors.badRequest("Invalid endTime");
-    if (s.endTime <= s.startTime) throw Errors.badRequest("endTime must be after startTime");
+    if (!(s.startTime instanceof Date) || isNaN(s.startTime.getTime()))
+      throw Errors.badRequest("Invalid startTime");
+    if (!(s.endTime instanceof Date) || isNaN(s.endTime.getTime()))
+      throw Errors.badRequest("Invalid endTime");
+    if (s.endTime <= s.startTime)
+      throw Errors.badRequest("endTime must be after startTime");
   }
 
   for (let i = 1; i < normalized.length; i++) {
-    if (overlaps(normalized[i - 1], normalized[i])) throw Errors.conflict("Slots overlap each other");
+    if (overlaps(normalized[i - 1], normalized[i]))
+      throw Errors.conflict("Slots overlap each other");
   }
 
   const minStart = normalized[0].startTime;
   const maxEnd = normalized[normalized.length - 1].endTime;
-  const existing = await DoctorsRepo.existingSlotsForOverlap(profile.id, minStart, maxEnd);
+  const existing = await DoctorsRepo.existingSlotsForOverlap(
+    profile.id,
+    minStart,
+    maxEnd,
+  );
   for (const s of normalized) {
-    if (existing.some((e) => overlaps(s, e))) {
+    if (existing.some((e: any) => overlaps(s, e))) {
       throw Errors.conflict("Overlaps existing availability slot");
     }
   }
@@ -99,7 +126,9 @@ export async function getDoctorAppointments(userId: string) {
       status: true,
       appointmentDate: true,
       notes: true,
-      patient: { select: { id: true, firstName: true, lastName: true, email: true } },
+      patient: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
       slot: { select: { startTime: true, endTime: true } },
     },
   });

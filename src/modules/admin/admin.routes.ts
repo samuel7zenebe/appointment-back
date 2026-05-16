@@ -9,7 +9,7 @@ import {
   createSpecialtyBodySchema,
   suspendBodySchema,
 } from "./admin.validation";
-import { Role } from "../../generated/prisma";
+import { Role } from "@prisma/client";
 
 export const adminRouter = Router();
 

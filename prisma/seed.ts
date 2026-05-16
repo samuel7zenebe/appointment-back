@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { Role, AppointmentStatus } from "../src/generated/prisma";
+import { Role, AppointmentStatus } from "@prisma/client";
 import { prisma } from "../src/prisma/client";
 
 async function main() {

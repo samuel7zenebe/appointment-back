@@ -1,9 +1,9 @@
-import { prisma } from "../../prisma/client";
 import { Errors } from "../../utils/errors";
 import { hashPassword, verifyPassword } from "../../utils/password";
 import { ok } from "../../utils/apiResponse";
 import { signAccessToken } from "../../utils/jwt";
-import { Role } from "../../generated/prisma";
+import { Role } from "@prisma/client";
+import { prisma } from "../../prisma/client";
 
 export async function register(input: {
   firstName: string;
@@ -17,7 +17,7 @@ export async function register(input: {
   const role = input.role ?? Role.PATIENT;
   const passwordHash = await hashPassword(input.password);
 
-  const created = await prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx: any) => {
     const user = await tx.user.create({
       data: {
         firstName: input.firstName,

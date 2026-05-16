@@ -1,4 +1,4 @@
-import { Role } from "../../generated/prisma";
+import { Role } from "@prisma/client";
 import { ok } from "../../utils/apiResponse";
 import { Errors } from "../../utils/errors";
 import { AdminRepo } from "./admin.repo";

@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 import { env } from "../config/env";
 import { logger } from "../config/logger";
 import { AppError, Errors } from "../utils/errors";
-import { Prisma } from "../generated/prisma";
+import { Prisma } from "@prisma/client";
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof ZodError) {
@@ -24,13 +24,11 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === "P2002") {
-      return res
-        .status(409)
-        .json({
-          success: false,
-          message: "Unique constraint violation",
-          error: err.meta,
-        });
+      return res.status(409).json({
+        success: false,
+        message: "Unique constraint violation",
+        error: err.meta,
+      });
     }
     if (err.code === "P2025") {
       return res

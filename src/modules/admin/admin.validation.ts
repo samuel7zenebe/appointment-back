@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Role } from "../../generated/prisma";
+import { Role } from "@prisma/client";
 
 export const adminUsersQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
