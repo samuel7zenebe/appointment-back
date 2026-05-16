@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Appointment System</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="auth.js"></script>
+</head>
+<body>
+    <div class="container" style="max-width: 550px;">
+        <div class="card">
+            <h1>Create Account</h1>
+            <p class="subtitle">Join our platform today</p>
+            
+            <form onsubmit="auth.register(event)">
+                <div class="row">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="firstName" placeholder="John" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="lastName" placeholder="Doe" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="john@example.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phoneNumber">Phone Number (Optional)</label>
+                    <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="+1 (555) 000-0000">
+                </div>
+
+                <div class="form-group">
+                    <label for="role">I am a...</label>
+                    <select id="role" name="role" onchange="auth.toggleSpecialty(this.value)">
+                        <option value="PATIENT">Patient</option>
+                        <option value="DOCTOR">Doctor</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="specialty-group">
+                    <label for="specialtyId">Specialty ID</label>
+                    <input type="text" id="specialtyId" name="specialtyId" placeholder="Enter specialty UUID">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Min. 8 characters" required minlength="8">
+                </div>
+                
+                <button type="submit">Create Account</button>
+                <div id="message"></div>
+            </form>
+
+            <div class="footer-text">
+                Already have an account? <a href="login.html">Sign in</a>
+            </div>
+            <div class="footer-text" style="margin-top: 0.5rem;">
+                <a href="index.html" style="font-size: 0.8rem; color: var(--text-muted);">← Back to home</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
